@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Fast Scrabble Cracker</string>
+    <string name="letters">Letters in your hands</string>
+    <string name="board_letters">Letters on the board</string>
+    <string name="find_button">Solve</string>
+    <string name="description">Instantly find the best solution to a Scrabble hand!</string>
+</resources>

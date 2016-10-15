@@ -1,0 +1,38 @@
+{
+  "project_info": {
+    "project_number": "124844268772",
+    "project_id": "fastscrabblecracker"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:124844268772:android:52bc515021ec8039",
+        "android_client_info": {
+          "package_name": "com.braga.fastscrabblecracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFq6g2SCZOsGSJU64S7IK2yyc2l0phMYk"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 2,
+          "analytics_property": {
+            "tracking_id": "UA-29544240-1"
+          }
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
