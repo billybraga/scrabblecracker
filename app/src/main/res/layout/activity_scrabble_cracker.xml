@@ -8,50 +8,84 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.braga.fastscrabblecracker.ScrabbleCrackerActivity"
+    tools:context="braga.scrabble.ScrabbleCrackerActivity"
     android:orientation="vertical">
 
     <EditText
-        android:id="@id/editTextLetters"
+        android:id="@+id/editTextLetters"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:imeOptions="actionNext"
+        android:inputType="text"
         android:hint="@string/letters" />
 
     <EditText
-        android:id="@id/editTextBoardLetters"
+        android:id="@+id/editTextBoardLetters"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:imeOptions="actionSearch"
+        android:inputType="text"
         android:hint="@string/board_letters" />
 
     <LinearLayout
-        android:id="@id/linearLayout1"
+        android:id="@+id/linearLayoutButtons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:baselineAligned="true"
-        android:orientation="vertical">
+        android:orientation="horizontal">
 
         <Button
-            android:id="@id/button1"
+            android:id="@+id/buttonSolve"
             android:layout_width="160dp"
             android:layout_height="wrap_content"
             android:text="@string/find_button" />
 
-        <ProgressBar
-            android:id="@id/progressBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="visible" />
-
         <Spinner
-            android:id="@id/spinnerLang"
+            android:id="@+id/spinnerLang"
+            android:layout_gravity="right"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1.0" />
+
     </LinearLayout>
 
     <ListView
-        android:id="@id/listView1"
+        android:id="@+id/listViewResults"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:descendantFocusability="blocksDescendants"/>
+
+    <RelativeLayout
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_marginTop="@dimen/activity_vertical_margin">
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="visible" />
+    </RelativeLayout>
+
+
+    <RelativeLayout
+        android:id="@+id/selectionLayout"
+        android:visibility="invisible"
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:layout_marginTop="@dimen/activity_vertical_margin">
+
+        <ProgressBar
+            android:id="@+id/selectionProgressBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <WebView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/selectionWebView"/>
+    </RelativeLayout>
+
 </LinearLayout>

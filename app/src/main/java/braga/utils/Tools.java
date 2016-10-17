@@ -1,4 +1,4 @@
-package com.braga.utils;
+package braga.utils;
 
 public class Tools {
      static String join(String glue, Object[] items) {

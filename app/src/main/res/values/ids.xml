@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources><item type="id" name="editTextLetters">false</item>
-    <item type="id" name="editTextBoardLetters">false</item>
-    <item type="id" name="linearLayout1">false</item>
-    <item type="id" name="button1">false</item>
-    <item type="id" name="progressBar">false</item>
-    <item type="id" name="spinnerLang">false</item>
-    <item type="id" name="listView1">false</item>
+<resources>
+    <item type="id" name="editTextLetters"></item>
+    <item type="id" name="editTextBoardLetters"></item>
+    <item type="id" name="linearLayoutButtons"></item>
+    <item type="id" name="buttonSolve"></item>
+    <item type="id" name="progressBar"></item>
+    <item type="id" name="spinnerLang"></item>
+    <item type="id" name="listViewResults"></item>
+    <item type="id" name="selectionProgressBar"></item>
+    <item type="id" name="selectionWebView"></item>
+    <item type="id" name="selectionLayout"></item>
 </resources>

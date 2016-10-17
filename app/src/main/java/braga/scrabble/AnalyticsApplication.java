@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.braga.fastscrabblecracker;
+package braga.scrabble;
 
 import android.app.Application;
 
@@ -27,6 +27,9 @@ import com.google.android.gms.analytics.Tracker;
  */
 public class AnalyticsApplication extends Application {
     private Tracker mTracker;
+
+    // Key used to store a user's tracking preferences in SharedPreferences.
+    public static final String TRACKING_PREF_KEY = "trackingPreference";
 
     /**
      * Gets the default {@link Tracker} for this {@link Application}.

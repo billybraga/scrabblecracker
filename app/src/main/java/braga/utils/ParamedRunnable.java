@@ -1,4 +1,4 @@
-package com.braga.utils;
+package braga.utils;
 
 public abstract class ParamedRunnable implements Runnable {
     protected Object[] params;

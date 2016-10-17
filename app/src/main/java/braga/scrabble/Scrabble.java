@@ -1,6 +1,6 @@
-package com.braga.fastscrabblecracker;
+package braga.scrabble;
 
-import com.braga.utils.StopWatch;
+import braga.utils.StopWatch;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;

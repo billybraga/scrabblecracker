@@ -4,11 +4,11 @@ android {
     compileSdkVersion 24
     buildToolsVersion "24.0.3"
     defaultConfig {
-        applicationId "com.braga.fastscrabblecracker"
+        applicationId "braga.scrabble"
         minSdkVersion 15
         targetSdkVersion 24
-        versionCode 1
-        versionName "1.0"
+        versionCode 20
+        versionName "2.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -28,5 +28,7 @@ dependencies {
     compile 'com.android.volley:volley:1.0.0'
     testCompile 'junit:junit:4.12'
     compile 'com.google.android.gms:play-services-analytics:9.2.0'
+    androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2.2'
+    compile 'junit:junit:4.12'
 }
 apply plugin: 'com.google.gms.google-services'

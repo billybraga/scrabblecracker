@@ -1,4 +1,4 @@
-package com.braga.fastscrabblecracker;
+package braga.scrabble;
 
 import org.junit.Test;
 
@@ -9,9 +9,9 @@ import static org.junit.Assert.*;
  *
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
-public class ExampleUnitTest {
+public class ScrabbleCrackerUnitTest {
     @Test
-    public void addition_isCorrect() throws Exception {
+    public void setValues() throws Exception {
         assertEquals(4, 2 + 2);
     }
 }

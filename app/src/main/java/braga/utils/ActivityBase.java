@@ -1,51 +1,51 @@
-package com.braga.utils;
+package braga.utils;
 
 import android.app.AlertDialog.Builder;
 import android.content.DialogInterface.OnClickListener;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 
-import com.braga.fastscrabblecracker.AnalyticsApplication;
+import braga.scrabble.AnalyticsApplication;
+import com.google.android.gms.analytics.GoogleAnalytics;
 import com.google.android.gms.analytics.HitBuilders;
 import com.google.android.gms.analytics.Tracker;
 
 public class ActivityBase extends AppCompatActivity {
     protected Tracker tracker;
 
-    /* renamed from: braga.utils.ActivityBase.1 */
-    class ShowMessageRunnable extends ParamedRunnable {
-        ShowMessageRunnable(Object... params) {
-            super(params);
-        }
-
-        public void run() {
-            ActivityBase.this.messageBox(this.params[0].toString(), this.params[1].toString());
-        }
-    }
-
-    /* renamed from: braga.utils.ActivityBase.2 */
-    class ShowMessage2Runnable extends ParamedRunnable {
-        ShowMessage2Runnable(Object... $anonymous0) {
-            super($anonymous0);
-        }
-
-        public void run() {
-            ActivityBase.this.messageBox((String) this.params[0], (String) this.params[1], (OnClickListener) this.params[2]);
-        }
-    }
-
     public ActivityBase() {
     }
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        this.tracker = ((AnalyticsApplication) getApplication()).getDefaultTracker();
+        init();
     }
 
     @Override
     public void onResume() {
+        super.onResume();
+        init();
+    }
+
+    private void init() {
+        final AnalyticsApplication app = (AnalyticsApplication) getApplication();
+        this.tracker = app.getDefaultTracker();
+
+        SharedPreferences userPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        userPrefs.registerOnSharedPreferenceChangeListener(new SharedPreferences.OnSharedPreferenceChangeListener () {
+            @Override
+            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+                if (key.equals(app.TRACKING_PREF_KEY)) {
+                    GoogleAnalytics.getInstance(getApplicationContext()).setAppOptOut(sharedPreferences.getBoolean(key, false));
+                }
+            }
+        });
+
         this.tracker.setScreenName("Image~" + this.getTitle());
         try {
             this.tracker.setAppVersion(getPackageManager().getPackageInfo(getPackageName(), 0).versionName);
@@ -62,23 +62,15 @@ public class ActivityBase extends AppCompatActivity {
         return true;
     }
 
-    public void messageBoxOnUIThread(String message, String button) {
-        runOnUiThread(new ShowMessageRunnable(message, button));
+    public void messageBox(String message, String buttonText) {
+        messageBox(message, buttonText, null);
     }
 
-    public void messageBoxOnUIThread(String message, String button, OnClickListener clickListener) {
-        runOnUiThread(new ShowMessage2Runnable(message, button, clickListener));
-    }
-
-    public void messageBox(String message, String neutralButtonText) {
-        messageBox(message, neutralButtonText, null);
-    }
-
-    public void messageBox(String message, String neutralButtonText, OnClickListener clickListener) {
+    public void messageBox(String message, String buttonText, OnClickListener clickListener) {
         Builder dialog = new Builder(this);
         dialog.setMessage(message);
-        if (neutralButtonText != null) {
-            dialog.setNeutralButton(neutralButtonText, clickListener);
+        if (buttonText != null) {
+            dialog.setPositiveButton(buttonText, clickListener);
         }
         dialog.show();
     }
