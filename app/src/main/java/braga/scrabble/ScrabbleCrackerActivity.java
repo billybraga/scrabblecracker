@@ -1,6 +1,5 @@
 package braga.scrabble;
 
-import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -26,40 +25,28 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import braga.utils.ActivityBase;
-import braga.utils.ParamedRunnable;
+import braga.utils.BidirectionalHashMap;
 
 import org.json.JSONException;
-import org.json.JSONObject;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 
 public class ScrabbleCrackerActivity extends ActivityBase {
 
-    static ArrayList<String> Languages = new ArrayList<String>();
-    static HashMap<String, String> LanguageTextToKey = new HashMap<String, String>();
-    static HashMap<String, String> LanguageKeyToText = new HashMap<String, String>();
+    static BidirectionalHashMap<String, String> Languages = new BidirectionalHashMap<String, String>();
+    static ArrayList<String> LanguageValues;
 
     static {
-        Languages.add("English");
-        Languages.add("Français");
-        Languages.add("Deutsch");
-        Languages.add("Español");
-        LanguageTextToKey.put("Deutsch", "de");
-        LanguageTextToKey.put("English", "en");
-        LanguageTextToKey.put("Español", "es");
-        LanguageTextToKey.put("Français", "fr");
-        LanguageKeyToText.put("de", "Deutsch");
-        LanguageKeyToText.put("en", "English");
-        LanguageKeyToText.put("es", "Español");
-        LanguageKeyToText.put("fr", "Français");
+        Languages.put("de", "Deutsch");
+        Languages.put("en", "English");
+        Languages.put("es", "Español");
+        Languages.put("fr", "Français");
+        LanguageValues = new ArrayList<String>(Languages.values());
     }
 
     private ProgressBar progressBar;
@@ -77,15 +64,28 @@ public class ScrabbleCrackerActivity extends ActivityBase {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         initLayout();
-        this.buttonSolve.setOnClickListener(new ButtonClickListener());
-        this.listViewResults.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        this.buttonSolve.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                itemClick(position);
+            public void onClick(View v) {
+                search();
             }
         });
-        this.editTextLetters.setOnEditorActionListener(new EditTextLettersOnEditorActionListener());
-        this.editTextBoardLetters.setOnEditorActionListener(new EditTextBoardLettersOnEditorActionListener());
+        this.listViewResults.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) { itemClick(position); }
+        });
+        this.editTextLetters.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                return editTextHandLettersOnEditorAction(v, actionId, event);
+            }
+        });
+        this.editTextBoardLetters.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                return editTextBoardLettersOnEditorAction(v, actionId, event);
+            }
+        });
         setLoading(false);
     }
 
@@ -112,8 +112,7 @@ public class ScrabbleCrackerActivity extends ActivityBase {
             response = this.scrabble.parseResponse(message);
             setValues(response.values);
         } catch (JSONException e) {
-            messageBox("Error loading server response.", "OK");
-            trackError("main", "search", "parse", e);
+            error(e, "Error loading server response.");
         }
         String descr = this.scrabble.getDescription();
         track("main", "searchTimeServer", descr, response.serverTime);
@@ -123,23 +122,23 @@ public class ScrabbleCrackerActivity extends ActivityBase {
     }
 
     private void setLanguages() {
-        ArrayAdapter<String> langAdapter = new ArrayAdapter(this, R.layout.support_simple_spinner_dropdown_item, Languages);
+        ArrayAdapter langAdapter = new ArrayAdapter(this, R.layout.support_simple_spinner_dropdown_item, LanguageValues);
         langAdapter.setDropDownViewResource(R.layout.support_simple_spinner_dropdown_item);
         this.spinnerLang.setAdapter(langAdapter);
         String languageKey = Locale.getDefault().getLanguage();
-        if (LanguageKeyToText.containsKey(languageKey)) {
-            String language = LanguageKeyToText.get(languageKey);
-            int langIndex = Languages.indexOf(language);
-            if (langIndex == -1) {
-                langIndex = 0;
-            }
-            this.spinnerLang.setSelection(langIndex);
+        if (Languages.containsKey(languageKey)) {
+            this.spinnerLang.setSelection(LanguageValues.indexOf(Languages.get(languageKey)));
         }
     }
 
     private void setValues(ArrayList<HashMap<String, String>> values) {
-        ArrayList<HashMap<String, String>> arrayList = values;
-        this.listViewResults.setAdapter(new SimpleAdapter(this, arrayList, 17367053, new String[]{"Word", "Value"}, new int[]{16908308, 16908309}));
+        this.listViewResults.setAdapter(
+                new SimpleAdapter(
+                        this,
+                        values,
+                        android.R.layout.simple_list_item_2,
+                        new String[] { "Word", "Value" },
+                        new int[] { android.R.id.text1, android.R.id.text2 }));
     }
 
     private void setLoading(boolean loading) {
@@ -152,7 +151,7 @@ public class ScrabbleCrackerActivity extends ActivityBase {
             setLoading(true);
             hideKeyboad();
             track("main", "click", "buttonSolve", 1);
-            scrabble = new Scrabble(editTextLetters.getText().toString(), editTextBoardLetters.getText().toString(),  LanguageTextToKey.get(spinnerLang.getSelectedItem().toString()));
+            scrabble = new Scrabble(editTextLetters.getText().toString(), editTextBoardLetters.getText().toString(),  Languages.getKey((String)spinnerLang.getSelectedItem()));
             tracker.setLanguage(scrabble.getLang());
             track("main", "searching", scrabble.getDescription(), 1);
 
@@ -168,16 +167,14 @@ public class ScrabbleCrackerActivity extends ActivityBase {
                 @Override
                 public void onErrorResponse(VolleyError error) {
                     setLoading(false);
-                    messageBox("An error occured while contacting the server ! ", "OK");
-                    trackError("main", "search, onclick", e);
+                    error(error, "An error occured while contacting the server.");
                 }
             });
 
             queue.add(request);
         } catch (Exception e) {
             setLoading(false);
-            messageBox("An error occured while contacting the server ! ", "OK");
-            trackError("main", "search, onclick", e);
+            error(e, "An error occured while contacting the server.");
         } catch (Throwable th) {
             setLoading(false);
         }
@@ -194,74 +191,18 @@ public class ScrabbleCrackerActivity extends ActivityBase {
         imm.hideSoftInputFromWindow(mainLayout.getWindowToken(), 0);
     }
 
-    class ButtonClickListener implements  AdapterView.OnClickListener {
-
-        @Override
-        public void onClick(View v) {
-            search();
-        }
-    }
-
     private void itemClick(int position) {
         try {
-            AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-            this.selectionLayout.setVisibility(View.VISIBLE);
-            this.selectionWebView.loadData("<html><body></body></html>", "text/html", "utf8");
-            dialog.setCancelable(true);
-            dialog.setView(this.selectionLayout);
-            dialog.show();
+            //AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+            //this.selectionLayout.setVisibility(View.VISIBLE);
+            //this.selectionWebView.loadData("<html><body></body></html>", "text/html", "utf8");
+            //dialog.setCancelable(true);
+            //dialog.setView(this.selectionLayout);
+            //dialog.show();
             String word = (String) ((HashMap) listViewResults.getAdapter().getItem(position)).get("Word");
-            RequestQueue queue = Volley.newRequestQueue(ScrabbleCrackerActivity.this);
-            JsonObjectRequest request = new JsonObjectRequest(
-                Request.Method.GET,
-                "https://en.wiktionary.org/w/api.php?format=json&action=query&titles=" + URLEncoder.encode(word, "utf8") + "&rvprop=content&prop=revisions&redirects=1",
-                new Response.Listener<JSONObject>(){
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            JSONObject pages = response.getJSONObject("query").getJSONObject("pages");
-                            String key = pages.keys().next();
-                            JSONObject revision = (JSONObject) pages.getJSONObject(key).getJSONArray("revisions").get(0);
-                            JsonObjectRequest request = new JsonObjectRequest(
-                                Request.Method.GET,
-                                "https://en.wiktionary.org/w/api.php?format=json&action=parse&text=" + URLEncoder.encode(revision.getString("*"), "utf8"),
-                                    new Response.Listener<JSONObject>() {
-                                        @Override
-                                        public void onResponse(JSONObject response) {
-                                            try {
-                                                String htmlContent = response.getJSONObject("parse").getJSONObject("text").getString("*");
-                                                selectionWebView.loadData(htmlContent, "text/html", "utf8");
-                                            } catch (JSONException e) {
-                                                e.printStackTrace();
-                                            }
-                                        }
-                                    },
-                                    new Response.ErrorListener() {
-                                        @Override
-                                        public void onErrorResponse(VolleyError error) {
-
-                                        }
-                                    }
-                            );
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        } catch (UnsupportedEncodingException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }, new Response.ErrorListener(){
-
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                selectionWebView.loadData("<html><body>Could not find definition.</body></html>", "text/html", "utf8");
-                trackError("main", "definition-revisions", error);
-            }
-        });
-
-            queue.add(request);
+            itemToClipboard(word);
         } catch (Exception e) {
-            trackError("main", "item", e);
-            messageBox("An error occured during copying to clipboard!", "OK");
+            error(e, "An error occured during copying to clipboard.");
         }
     }
 
@@ -270,37 +211,37 @@ public class ScrabbleCrackerActivity extends ActivityBase {
             track("main", "copying", "item", 1);
             ((ClipboardManager) getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("Scrabble Word Finder", word));
             track("main", "copied", "item", 1);
-            Toast.makeText(getApplicationContext(), "\"" + word + "\" was copied to clipboard!", Toast.LENGTH_SHORT);
+            Toast
+                    .makeText(getApplicationContext(), "\"" + word + "\" was copied to clipboard.", Toast.LENGTH_SHORT)
+                    .show();
             track("main", "copyOKed", "item", 1);
         } catch (Exception e) {
-            trackError("main", "item", e);
-            messageBox("An error occured during copying to clipboard!", "OK");
+            error(e, "An error occured during copying to clipboard!");
         }
     }
 
-    class EditTextLettersOnEditorActionListener implements TextView.OnEditorActionListener {
-
-        @Override
-        public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-            if (actionId != EditorInfo.IME_ACTION_NEXT){
-                return  false;
-            }
-
-            editTextBoardLetters.requestFocus();
-            return true;
-        }
+    private void error(Exception e, String userMessage) {
+        trackError("main", "item", e);
+        Toast
+                .makeText(getApplicationContext(), userMessage, Toast.LENGTH_SHORT)
+                .show();
     }
 
-    class EditTextBoardLettersOnEditorActionListener implements TextView.OnEditorActionListener {
-
-        @Override
-        public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-            if (actionId != EditorInfo.IME_ACTION_SEARCH){
-                return  false;
-            }
-
-            search();
-            return true;
+    private boolean editTextHandLettersOnEditorAction(TextView v, int actionId, KeyEvent event) {
+        if (actionId != EditorInfo.IME_ACTION_NEXT){
+            return  false;
         }
+
+        editTextBoardLetters.requestFocus();
+        return true;
+    }
+
+    private boolean editTextBoardLettersOnEditorAction(TextView v, int actionId, KeyEvent event) {
+        if (actionId != EditorInfo.IME_ACTION_SEARCH){
+            return  false;
+        }
+
+        search();
+        return true;
     }
 }

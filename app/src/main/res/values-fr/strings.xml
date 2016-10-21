@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="board_letters">Tuiles sur la planche</string>
+    <string name="description">Trouvez rapidement la meilleure solution au Scrabble</string>
+    <string name="find_button">Trouver</string>
+    <string name="letters">Tuiles dans vos mains</string>
+</resources>

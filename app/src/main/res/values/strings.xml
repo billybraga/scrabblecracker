@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Fast Scrabble Cracker</string>
+    <string name="app_name" translatable="false">Scrabble Word Finder</string>
     <string name="letters">Letters in your hands</string>
     <string name="board_letters">Letters on the board</string>
     <string name="find_button">Solve</string>

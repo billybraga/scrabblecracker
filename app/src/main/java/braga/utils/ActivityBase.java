@@ -3,9 +3,11 @@ package braga.utils;
 import android.app.AlertDialog.Builder;
 import android.content.DialogInterface.OnClickListener;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Debug;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 
@@ -88,6 +90,7 @@ public class ActivityBase extends AppCompatActivity {
     }
 
     protected void trackError(String cat, String location, Exception e) {
+        e.printStackTrace();
         track(cat, "error", String.format("%s - %s - %s", new Object[]{location, e.getMessage(), Tools.join(", ", e.getStackTrace())}), 1);
     }
 
