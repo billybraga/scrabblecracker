@@ -1,91 +1,107 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/activity_scrabble_cracker"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="braga.scrabble.ScrabbleCrackerActivity"
-    android:orientation="vertical">
-
-    <EditText
-        android:id="@+id/editTextLetters"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:maxLines="1"
-        android:imeOptions="actionNext"
-        android:inputType="text"
-        android:hint="@string/letters" />
-
-    <EditText
-        android:id="@+id/editTextBoardLetters"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:maxLines="1"
-        android:imeOptions="actionSearch"
-        android:inputType="text"
-        android:hint="@string/board_letters" />
+    tools:context="braga.scrabble.ScrabbleCrackerActivity">
 
     <LinearLayout
-        android:id="@+id/linearLayoutButtons"
+        android:id="@+id/generalLayout"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingTop="@dimen/activity_vertical_margin"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:baselineAligned="true"
-        android:orientation="horizontal">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <Button
-            android:id="@+id/buttonSolve"
-            android:layout_width="160dp"
-            android:layout_height="wrap_content"
-            android:text="@string/find_button" />
-
-        <Spinner
-            android:id="@+id/spinnerLang"
-            android:layout_gravity="right"
+        <EditText
+            android:id="@+id/editTextLetters"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1.0" />
+            android:maxLines="1"
+            android:imeOptions="actionNext"
+            android:inputType="text"
+            android:hint="@string/letters" />
 
+        <EditText
+            android:id="@+id/editTextBoardLetters"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:hint="@string/board_letters" />
+
+        <LinearLayout
+            android:id="@+id/linearLayoutButtons"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="true"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/buttonSolve"
+                android:layout_width="160dp"
+                android:layout_height="wrap_content"
+                android:text="@string/find_button" />
+
+            <Spinner
+                android:id="@+id/spinnerLang"
+                android:layout_gravity="right"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.0" />
+
+        </LinearLayout>
+
+        <ListView
+            android:id="@+id/listViewResults"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:descendantFocusability="blocksDescendants"/>
+
+        <RelativeLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_marginTop="@dimen/activity_vertical_margin">
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="visible" />
+        </RelativeLayout>
     </LinearLayout>
 
-    <ListView
-        android:id="@+id/listViewResults"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:descendantFocusability="blocksDescendants"/>
-
     <RelativeLayout
-        android:layout_height="wrap_content"
-        android:layout_width="match_parent"
-        android:layout_marginTop="@dimen/activity_vertical_margin">
-
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="visible" />
-    </RelativeLayout>
-
-
-    <RelativeLayout
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingTop="150dp"
         android:id="@+id/selectionLayout"
         android:visibility="invisible"
         android:layout_height="match_parent"
-        android:layout_width="match_parent"
-        android:layout_marginTop="@dimen/activity_vertical_margin">
+        android:layout_width="match_parent">
 
         <ProgressBar
             android:id="@+id/selectionProgressBar"
+            android:visibility="invisible"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <WebView
-            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/selectionWebView"/>
-    </RelativeLayout>
+            android:layout_marginTop="-300px"/>
 
-</LinearLayout>
+        <RelativeLayout
+            android:id="@+id/selectionCard"
+            android:background="@android:drawable/dialog_holo_light_frame"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent">
+            <WebView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/selectionWebView"/>
+        </RelativeLayout>
+    </RelativeLayout>
+</RelativeLayout>

@@ -10,4 +10,7 @@
     <item type="id" name="selectionProgressBar"></item>
     <item type="id" name="selectionWebView"></item>
     <item type="id" name="selectionLayout"></item>
+    <item type="id" name="selectionCardView"></item>
+    <item type="id" name="generalLayout"></item>
+    <item type="id" name="selectionCard"></item>
 </resources>

@@ -13,9 +13,9 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.SimpleAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -29,9 +29,11 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import braga.utils.ActivityBase;
 import braga.utils.BidirectionalHashMap;
+import braga.utils.SingleHostWebViewClient;
 
 import org.json.JSONException;
 
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
@@ -101,9 +103,31 @@ public class ScrabbleCrackerActivity extends ActivityBase {
         this.selectionLayout = findViewById(R.id.selectionLayout);
         this.selectionProgressBar = (ProgressBar) findViewById(R.id.selectionProgressBar);
         this.selectionWebView = (WebView) findViewById(R.id.selectionWebView);
+        this.selectionLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectionLayout.setVisibility(View.INVISIBLE);
+            }
+        });
+        this.selectionWebView.setWebViewClient(new SingleHostWebViewClient("wiktionary.org"));
         setLoading(false);
         setLanguages();
         this.editTextLetters.requestFocus();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (this.selectionLayout.getVisibility() == View.VISIBLE) {
+            if (this.selectionWebView.canGoBack()) {
+                this.selectionWebView.goBack();
+                return;
+            }
+
+            this.selectionLayout.setVisibility(View.INVISIBLE);
+            return;
+        }
+
+        super.onBackPressed();
     }
 
     private void recieveData(String message) {
@@ -146,12 +170,17 @@ public class ScrabbleCrackerActivity extends ActivityBase {
         this.progressBar.setVisibility(loading ? View.VISIBLE : View.INVISIBLE);
     }
 
+    private String getLangKey() {
+        return Languages.getKey((String)this.spinnerLang.getSelectedItem());
+    }
+
     private  void search() {
         try {
+            this.selectionLayout.setVisibility(View.INVISIBLE);
             setLoading(true);
             hideKeyboad();
             track("main", "click", "buttonSolve", 1);
-            scrabble = new Scrabble(editTextLetters.getText().toString(), editTextBoardLetters.getText().toString(),  Languages.getKey((String)spinnerLang.getSelectedItem()));
+            scrabble = new Scrabble(editTextLetters.getText().toString(), editTextBoardLetters.getText().toString(), this.getLangKey());
             tracker.setLanguage(scrabble.getLang());
             track("main", "searching", scrabble.getDescription(), 1);
 
@@ -181,10 +210,7 @@ public class ScrabbleCrackerActivity extends ActivityBase {
     }
 
     private void hideKeyboad() {
-        LinearLayout mainLayout;
-
-        // Get your layout set up, this is just an example
-        mainLayout = (LinearLayout)findViewById(R.id.activity_scrabble_cracker);
+        RelativeLayout mainLayout = (RelativeLayout)findViewById(R.id.activity_scrabble_cracker);
 
         // Then just use the following:
         InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -193,16 +219,14 @@ public class ScrabbleCrackerActivity extends ActivityBase {
 
     private void itemClick(int position) {
         try {
-            //AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-            //this.selectionLayout.setVisibility(View.VISIBLE);
-            //this.selectionWebView.loadData("<html><body></body></html>", "text/html", "utf8");
-            //dialog.setCancelable(true);
-            //dialog.setView(this.selectionLayout);
-            //dialog.show();
+            this.hideKeyboad();
             String word = (String) ((HashMap) listViewResults.getAdapter().getItem(position)).get("Word");
-            itemToClipboard(word);
+            this.itemToClipboard(word);
+            this.selectionLayout.setVisibility(View.VISIBLE);
+            this.selectionWebView.loadData("", "text/plain", "utf8");
+            this.selectionWebView.loadUrl("https://" + this.getLangKey() + ".m.wiktionary.org/wiki/" + URLEncoder.encode(word, "utf8"));
         } catch (Exception e) {
-            error(e, "An error occured during copying to clipboard.");
+            error(e, "An error occurred loading wiktionary.");
         }
     }
 
@@ -234,6 +258,23 @@ public class ScrabbleCrackerActivity extends ActivityBase {
 
         editTextBoardLetters.requestFocus();
         return true;
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putString("editTextBoardLetters", this.editTextBoardLetters.getText().toString());
+        outState.putString("editTextLetters", this.editTextLetters.getText().toString());
+        outState.putInt("focus", this.editTextBoardLetters.hasFocus() ? R.id.editTextBoardLetters : R.id.editTextLetters);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        this.editTextLetters.setText(savedInstanceState.getString("editTextLetters"));
+        this.editTextBoardLetters.setText(savedInstanceState.getString("editTextBoardLetters"));
+        findViewById(savedInstanceState.getInt("focus")).requestFocus();
+        this.search();
+        super.onRestoreInstanceState(savedInstanceState);
     }
 
     private boolean editTextBoardLettersOnEditorAction(TextView v, int actionId, KeyEvent event) {

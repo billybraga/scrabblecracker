@@ -12,6 +12,7 @@ import android.support.test.filters.LargeTest;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
 import android.view.View;
+import android.webkit.WebView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.TwoLineListItem;
@@ -31,6 +32,7 @@ import java.util.HashMap;
 import static android.support.test.espresso.Espresso.onView;
 import static android.support.test.espresso.action.ViewActions.click;
 import static android.support.test.espresso.action.ViewActions.closeSoftKeyboard;
+import static android.support.test.espresso.action.ViewActions.pressBack;
 import static android.support.test.espresso.action.ViewActions.typeText;
 import static android.support.test.espresso.assertion.ViewAssertions.matches;
 import static android.support.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
@@ -134,6 +136,65 @@ public class ScrabbleCrackerUiTest {
                         ClipData data = ((ClipboardManager) mActivityRule.getActivity().getSystemService(Context.CLIPBOARD_SERVICE)).getPrimaryClip();
                         Assert.assertEquals ("Scrabble Word Finder", data.getDescription().getLabel());
                         Assert.assertEquals (word, data.getItemAt(0).getText());
+                    }
+                });
+
+        onView(withId(R.id.selectionLayout))
+                .check(new ViewAssertion() {
+                    @Override
+                    public void check(View view, NoMatchingViewException noViewFoundException) {
+                        Assert.assertEquals(View.VISIBLE, view.getVisibility());
+                    }
+                });
+
+        onView(withId(R.id.selectionWebView))
+                .check(new ViewAssertion() {
+                    @Override
+                    public void check(View view, NoMatchingViewException noViewFoundException) {
+                        WebView webView = (WebView)view;
+                        Assert.assertTrue(webView.getUrl().contains("wiktionary"));
+                    }
+                });
+
+        onView(withId(R.id.activity_scrabble_cracker))
+                .perform(pressBack());
+
+        onView(withId(R.id.selectionLayout))
+                .check(new ViewAssertion() {
+                    @Override
+                    public void check(View view, NoMatchingViewException noViewFoundException) {
+                        Assert.assertEquals(View.INVISIBLE, view.getVisibility());
+                    }
+                });
+
+        onView(withId(R.id.buttonSolve)).perform(click());
+
+        // Check that the text was changed.
+        onView(withId(R.id.listViewResults))
+                .check(new ViewAssertion() {
+                    @Override
+                    public void check(View view, NoMatchingViewException noViewFoundException) {
+                        ListView listView = (ListView)view;
+                        TwoLineListItem item = (TwoLineListItem) listView.getAdapter().getView(0, null, null);
+                        Assert.assertEquals("horse", ((TextView)item.getChildAt(0)).getText());
+                    }
+                })
+                .perform(clickItem(0, R.id.listViewResults));
+
+        onView(withId(R.id.selectionLayout))
+                .check(new ViewAssertion() {
+                    @Override
+                    public void check(View view, NoMatchingViewException noViewFoundException) {
+                        Assert.assertEquals(View.VISIBLE, view.getVisibility());
+                    }
+                });
+
+        onView(withId(R.id.selectionLayout))
+                .perform(click())
+                .check(new ViewAssertion() {
+                    @Override
+                    public void check(View view, NoMatchingViewException noViewFoundException) {
+                        Assert.assertEquals(View.INVISIBLE, view.getVisibility());
                     }
                 });
     }
