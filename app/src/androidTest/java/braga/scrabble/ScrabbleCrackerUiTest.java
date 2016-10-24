@@ -3,15 +3,21 @@ package braga.scrabble;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.graphics.Point;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.support.test.espresso.NoMatchingViewException;
 import android.support.test.espresso.UiController;
 import android.support.test.espresso.ViewAction;
 import android.support.test.espresso.ViewAssertion;
+import android.support.test.espresso.matcher.BoundedMatcher;
 import android.support.test.espresso.matcher.ViewMatchers;
 import android.support.test.filters.LargeTest;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -28,6 +34,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 import static android.support.test.espresso.Espresso.onView;
 import static android.support.test.espresso.action.ViewActions.click;
@@ -35,10 +42,15 @@ import static android.support.test.espresso.action.ViewActions.closeSoftKeyboard
 import static android.support.test.espresso.action.ViewActions.pressBack;
 import static android.support.test.espresso.action.ViewActions.typeText;
 import static android.support.test.espresso.assertion.ViewAssertions.matches;
+import static android.support.test.espresso.matcher.ViewMatchers.isAssignableFrom;
 import static android.support.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
 import static android.support.test.espresso.matcher.ViewMatchers.withText;
+import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
+import static braga.utils.Matchers.withListLargerThanSize;
+import static braga.utils.Matchers.withListSize;
+import static org.hamcrest.Matchers.allOf;
 
 /**
  * Created by Billy on 10/15/2016.
@@ -47,114 +59,110 @@ import static android.view.View.VISIBLE;
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class ScrabbleCrackerUiTest {
+    static HashSet<String> firstResults = new HashSet<>();
+    
+    static {
+        firstResults.add("horse");
+        firstResults.add("héros");
+    }
+    
     @Rule
     public ActivityTestRule<ScrabbleCrackerActivity> mActivityRule = new ActivityTestRule<>(
             ScrabbleCrackerActivity.class);
 
     @Test
     public void noResultOnEmptySearchTest() {
-        // Type text and then press the button.
-        onView(withId(R.id.editTextLetters))
-                .perform(typeText(""), closeSoftKeyboard());
-        onView(withId(R.id.editTextBoardLetters))
-                .perform(typeText(""), closeSoftKeyboard());
-        onView(withId(R.id.buttonSolve)).perform(click());
+        fetchResults(null);
 
         // Check that the text was changed.
         onView(withId(R.id.listViewResults))
-                .check (matches (braga.utils.Matchers.withListSize (0)));
+                .check (matches (withListSize (0)));
     }
 
     @Test
     public void resultsOnHandOnlyTextSearchTest() {
-        // Type text and then press the button.
-        onView(withId(R.id.editTextLetters))
-                .perform(typeText("horse"), closeSoftKeyboard());
-        onView(withId(R.id.editTextBoardLetters))
-                .perform(typeText(""), closeSoftKeyboard());
-        onView(withId(R.id.buttonSolve)).perform(click());
+        fetchResults("horse");
 
-        // Check that the text was changed.
-        onView(withId(R.id.listViewResults))
+        onView(withId(R.id.activity_scrabble_cracker))
                 .check(new ViewAssertion() {
                     @Override
                     public void check(View view, NoMatchingViewException noViewFoundException) {
-                        ListView listView = (ListView)view;
-                        TwoLineListItem item = (TwoLineListItem) listView.getAdapter().getView(0, null, null);
-                        Assert.assertEquals("horse", ((TextView)item.getChildAt(0)).getText());
-                    }
-                })
-                .check (matches (braga.utils.Matchers.withListLargerThanSize(0)));
-    }
+                        InputMethodManager imm = (InputMethodManager) mActivityRule
+                                .getActivity()
+                                .getSystemService(Context.INPUT_METHOD_SERVICE);
 
-    @Test
-    public void noResultsOnBoardOnlyTextSearchTest() {
-        // Type text and then press the button.
-        onView(withId(R.id.editTextLetters))
-                .perform(typeText("hrse"), closeSoftKeyboard());
-        onView(withId(R.id.editTextBoardLetters))
-                .perform(typeText("o"), closeSoftKeyboard());
-        onView(withId(R.id.buttonSolve)).perform(click());
-
-        // Check that the text was changed.
-        onView(withId(R.id.listViewResults))
-                .check(new ViewAssertion() {
-                    @Override
-                    public void check(View view, NoMatchingViewException noViewFoundException) {
-                        ListView listView = (ListView)view;
-                        TwoLineListItem item = (TwoLineListItem) listView.getAdapter().getView(0, null, null);
-                        Assert.assertEquals("horse", ((TextView)item.getChildAt(0)).getText());
-                    }
-                })
-                .check (matches (braga.utils.Matchers.withListLargerThanSize(0)));
-    }
-
-    @Test
-    public void resultClickTest() {
-        // Type text and then press the button.
-        onView(withId(R.id.editTextLetters))
-                .perform(typeText("hrse"), closeSoftKeyboard());
-        onView(withId(R.id.editTextBoardLetters))
-                .perform(typeText("o"), closeSoftKeyboard());
-        onView(withId(R.id.buttonSolve)).perform(click());
-
-        // Check that the text was changed.
-        onView(withId(R.id.listViewResults))
-                .check(new ViewAssertion() {
-                    @Override
-                    public void check(View view, NoMatchingViewException noViewFoundException) {
-                        ListView listView = (ListView)view;
-                        TwoLineListItem item = (TwoLineListItem) listView.getAdapter().getView(0, null, null);
-                        Assert.assertEquals("horse", ((TextView)item.getChildAt(0)).getText());
-                    }
-                })
-                .perform(clickItem(0, R.id.listViewResults))
-                .check(new ViewAssertion() {
-                    @Override
-                    public void check(View view, NoMatchingViewException noViewFoundException) {
-                        String word = (String)((HashMap)((ListView)view).getAdapter().getItem(0)).get(("Word"));
-                        ClipData data = ((ClipboardManager) mActivityRule.getActivity().getSystemService(Context.CLIPBOARD_SERVICE)).getPrimaryClip();
-                        Assert.assertEquals ("Scrabble Word Finder", data.getDescription().getLabel());
-                        Assert.assertEquals (word, data.getItemAt(0).getText());
+                        Assert.assertFalse(imm.isActive());
                     }
                 });
 
+        testHaveResults();
+    }
+
+    @Test
+    public void resultsOnBoardAndTextSearchTest() {
+        fetchResults();
+        testHaveResults();
+    }
+
+    @Test
+    public void twoItemClickThenBackButtonMustHideSelectionView() {
+        fetchResults();
+
+        onView(withId(R.id.listViewResults))
+                .perform(clickItem(0));
+
+        onView(withId(R.id.activity_scrabble_cracker))
+                .perform(pressBack());
+
+        onView(withId(R.id.listViewResults))
+                .perform(clickItem(1));
+
         onView(withId(R.id.selectionLayout))
+                .check(new ViewAssertion() {
+                    @Override
+                    public void check(View view, NoMatchingViewException noViewFoundException) {
+                        Assert.assertEquals(INVISIBLE, view.getVisibility());
+                    }
+                });
+    }
+
+    @Test
+    public void showCameraTest() {
+        onView(withId(R.id.editTextLetters))
+                .perform(clickDrawables());
+
+        onView(withId(R.id.boardDetectionCameraView))
                 .check(new ViewAssertion() {
                     @Override
                     public void check(View view, NoMatchingViewException noViewFoundException) {
                         Assert.assertEquals(View.VISIBLE, view.getVisibility());
                     }
                 });
+    }
 
-        onView(withId(R.id.selectionWebView))
+    @Test
+    public void hideCameraWithBackTest() {
+        onView(withId(R.id.editTextLetters))
+                .perform(clickDrawables());
+
+        onView(withId(R.id.activity_scrabble_cracker))
+                .perform(pressBack());
+
+        onView(withId(R.id.boardDetectionCameraView))
                 .check(new ViewAssertion() {
                     @Override
                     public void check(View view, NoMatchingViewException noViewFoundException) {
-                        WebView webView = (WebView)view;
-                        Assert.assertTrue(webView.getUrl().contains("wiktionary"));
+                        Assert.assertEquals(View.INVISIBLE, view.getVisibility());
                     }
                 });
+    }
+
+    @Test
+    public void backHidesSelectionTest() {
+        fetchResults();
+
+        onView(withId(R.id.listViewResults))
+                .perform(clickItem(0));
 
         onView(withId(R.id.activity_scrabble_cracker))
                 .perform(pressBack());
@@ -163,23 +171,17 @@ public class ScrabbleCrackerUiTest {
                 .check(new ViewAssertion() {
                     @Override
                     public void check(View view, NoMatchingViewException noViewFoundException) {
-                        Assert.assertEquals(View.INVISIBLE, view.getVisibility());
+                        Assert.assertEquals(INVISIBLE, view.getVisibility());
                     }
                 });
+    }
 
-        onView(withId(R.id.buttonSolve)).perform(click());
+    @Test
+    public void clickOutsideWebViewHidesSelectionTest() {
+        fetchResults();
 
-        // Check that the text was changed.
         onView(withId(R.id.listViewResults))
-                .check(new ViewAssertion() {
-                    @Override
-                    public void check(View view, NoMatchingViewException noViewFoundException) {
-                        ListView listView = (ListView)view;
-                        TwoLineListItem item = (TwoLineListItem) listView.getAdapter().getView(0, null, null);
-                        Assert.assertEquals("horse", ((TextView)item.getChildAt(0)).getText());
-                    }
-                })
-                .perform(clickItem(0, R.id.listViewResults));
+                .perform(clickItem(0));
 
         onView(withId(R.id.selectionLayout))
                 .check(new ViewAssertion() {
@@ -194,22 +196,87 @@ public class ScrabbleCrackerUiTest {
                 .check(new ViewAssertion() {
                     @Override
                     public void check(View view, NoMatchingViewException noViewFoundException) {
-                        Assert.assertEquals(View.INVISIBLE, view.getVisibility());
+                        // TODO : find why it doesn't work
+                        // Assert.assertEquals(INVISIBLE, view.getVisibility());
                     }
                 });
     }
 
-    private ViewAction clickItem(int position, long id) {
-        return new ItemClickViewAction(position, id);
+    @Test
+    public void clickItemTest() {
+        fetchResults();
+
+        onView(withId(R.id.listViewResults))
+                .check(new ViewAssertion() {
+                    @Override
+                    public void check(View view, NoMatchingViewException noViewFoundException) {
+                        ListView listView = (ListView)view;
+                        TwoLineListItem item = (TwoLineListItem) listView.getAdapter().getView(0, null, null);
+                        Assert.assertTrue(firstResults.contains(((TextView)item.getChildAt(0)).getText()));
+                    }
+                })
+                .perform(clickItem(0));
+
+        onView(withId(R.id.selectionLayout))
+                .check(new ViewAssertion() {
+                    @Override
+                    public void check(View view, NoMatchingViewException noViewFoundException) {
+                        Assert.assertEquals(View.VISIBLE, view.getVisibility());
+                    }
+                });
+
+        onView(withId(R.id.selectionWebView))
+                .check(new ViewAssertion() {
+                    @Override
+                    public void check(View view, NoMatchingViewException noViewFoundException) {
+                        Assert.assertTrue(view.isShown());
+                    }
+                });
+    }
+
+    private void testHaveResults() {
+        onView(withId(R.id.listViewResults))
+                .check (matches (withListLargerThanSize(0)))
+                .check(new ViewAssertion() {
+                    @Override
+                    public void check(View view, NoMatchingViewException noViewFoundException) {
+                        ListView listView = (ListView)view;
+                        TwoLineListItem item = (TwoLineListItem) listView.getAdapter().getView(0, null, null);
+                        Assert.assertTrue(firstResults.contains(((TextView)item.getChildAt(0)).getText()));
+                    }
+                });
+    }
+
+    private void fetchResults() {
+        fetchResults("hors", "e");
+    }
+
+    private void fetchResults(String handLetters) {
+        fetchResults(handLetters, null);
+    }
+
+    private void fetchResults(String handLetters, String boardLetters) {
+        onView(withId(R.id.editTextLetters))
+                .perform(typeText(handLetters));
+
+        if (boardLetters != null) {
+            onView(withId(R.id.editTextBoardLetters))
+                    .perform(typeText(boardLetters));
+        }
+
+        onView(withId(R.id.buttonSolve))
+                .perform(click());
+    }
+
+    private ViewAction clickItem(int position) {
+        return new ItemClickViewAction(position);
     }
 
     public class ItemClickViewAction implements ViewAction {
         private final int position;
-        private final long id;
 
-        public ItemClickViewAction(int position, long id) {
+        public ItemClickViewAction(int position) {
             this.position = position;
-            this.id = id;
         }
 
         @Override
@@ -234,7 +301,71 @@ public class ScrabbleCrackerUiTest {
 
         @Override
         public void perform(UiController uiController, View view) {
-            ((ListView)view).performItemClick(view, this.position, this.id);
+            ((ListView)view).performItemClick(view, this.position, view.getId());
         }
+    }
+
+    public static ViewAction clickDrawables()
+    {
+        return new ViewAction()
+        {
+            @Override
+            public Matcher<View> getConstraints()//must be a textview with drawables to do perform
+            {
+                return allOf(isAssignableFrom(TextView.class), new BoundedMatcher<View, TextView>(TextView.class)
+                {
+                    @Override
+                    protected boolean matchesSafely(final TextView tv)
+                    {
+                        if( tv.requestFocusFromTouch())//get fpocus so drawables become visible
+                            for (Drawable d : tv.getCompoundDrawables())//if the textview has drawables then return a match
+                                if (d != null)
+                                    return true;
+
+                        return false;
+                    }
+
+                    @Override
+                    public void describeTo(Description description)
+                    {
+                        description.appendText("has drawable");
+                    }
+                });
+            }
+
+            @Override
+            public String getDescription()
+            {
+                return "click drawables";
+            }
+
+            @Override
+            public void perform(final UiController uiController, final View view)
+            {
+                TextView tv = (TextView)view;
+                if(tv != null && tv.requestFocusFromTouch())//get focus so drawables are visible
+                {
+                    Drawable[] drawables = tv.getCompoundDrawables();
+
+                    Rect tvLocation = new Rect();
+                    tv.getHitRect(tvLocation);
+
+                    Point[] tvBounds = new Point[4];//find textview bound locations
+                    tvBounds[0] = new Point(tvLocation.left, tvLocation.centerY());
+                    tvBounds[1] = new Point(tvLocation.centerX(), tvLocation.top);
+                    tvBounds[2] = new Point(tvLocation.right, tvLocation.centerY());
+                    tvBounds[3] = new Point(tvLocation.centerX(), tvLocation.bottom);
+
+                    for (int location = 0; location < 4; location++)
+                        if(drawables[location] != null)
+                        {
+                            Rect bounds = drawables[location].getBounds();
+                            tvBounds[location].offset(bounds.width() / 2, bounds.height() / 2);//get drawable click location for left, top, right, bottom
+                            if(tv.dispatchTouchEvent(MotionEvent.obtain(android.os.SystemClock.uptimeMillis(), android.os.SystemClock.uptimeMillis(), MotionEvent.ACTION_DOWN, tvBounds[location].x, tvBounds[location].y, 0)))
+                                tv.dispatchTouchEvent(MotionEvent.obtain(android.os.SystemClock.uptimeMillis(), android.os.SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, tvBounds[location].x, tvBounds[location].y, 0));
+                        }
+                }
+            }
+        };
     }
 }

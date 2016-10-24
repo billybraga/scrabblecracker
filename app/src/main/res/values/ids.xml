@@ -13,4 +13,6 @@
     <item type="id" name="selectionCardView"></item>
     <item type="id" name="generalLayout"></item>
     <item type="id" name="selectionCard"></item>
+    <item type="id" name="boardDetectionLayout"></item>
+    <item type="id" name="boardDetectionCameraView"></item>
 </resources>

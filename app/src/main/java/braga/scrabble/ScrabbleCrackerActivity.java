@@ -4,7 +4,10 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.Bundle;
+import android.util.DebugUtils;
+import android.util.Log;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -13,6 +16,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -32,18 +36,25 @@ import braga.utils.BidirectionalHashMap;
 import braga.utils.SingleHostWebViewClient;
 
 import org.json.JSONException;
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.JavaCameraView;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Mat;
 
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 
-public class ScrabbleCrackerActivity extends ActivityBase {
-
+public class ScrabbleCrackerActivity extends ActivityBase implements CameraBridgeViewBase.CvCameraViewListener2, View.OnTouchListener {
+    private static final String TAG = "ScrabbleCrackerActivity";
     static BidirectionalHashMap<String, String> Languages = new BidirectionalHashMap<String, String>();
     static ArrayList<String> LanguageValues;
 
     static {
+        System.loadLibrary("opencv_java3");
         Languages.put("de", "Deutsch");
         Languages.put("en", "English");
         Languages.put("es", "Español");
@@ -59,13 +70,44 @@ public class ScrabbleCrackerActivity extends ActivityBase {
     ListView listViewResults;
     Scrabble scrabble;
     Spinner spinnerLang;
-    private ProgressBar selectionProgressBar;
     private WebView selectionWebView;
+    private RelativeLayout boardDetectionLayout;
+    private JavaCameraView boardDetectionCameraView;
+    private LinearLayout generalLayout;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
         initLayout();
+    }
+
+    private void initLayout() {
+        setContentView(R.layout.activity_scrabble_cracker);
+
+        track("main", "open", "ScrabbleCrackerActivity", 1);
+        this.generalLayout = (LinearLayout) findViewById(R.id.generalLayout);
+        this.boardDetectionCameraView = (JavaCameraView) findViewById(R.id.boardDetectionCameraView);
+        this.boardDetectionLayout = (RelativeLayout) findViewById(R.id.boardDetectionLayout);
+        this.buttonSolve = (Button) findViewById(R.id.buttonSolve);
+        this.listViewResults = (ListView) findViewById(R.id.listViewResults);
+        this.editTextBoardLetters = (EditText) findViewById(R.id.editTextBoardLetters);
+        this.editTextLetters = (EditText) findViewById(R.id.editTextLetters);
+        this.spinnerLang = (Spinner) findViewById(R.id.spinnerLang);
+        this.progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        this.selectionLayout = findViewById(R.id.selectionLayout);
+        this.selectionWebView = (WebView) findViewById(R.id.selectionWebView);
+        this.selectionLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectionLayout.setVisibility(View.INVISIBLE);
+            }
+        });
+        this.selectionWebView.setWebViewClient(new SingleHostWebViewClient("wiktionary.org"));
         this.buttonSolve.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -88,46 +130,58 @@ public class ScrabbleCrackerActivity extends ActivityBase {
                 return editTextBoardLettersOnEditorAction(v, actionId, event);
             }
         });
-        setLoading(false);
-    }
-
-    private void initLayout() {
-        setContentView(R.layout.activity_scrabble_cracker);
-        track("main", "open", "ScrabbleCrackerActivity", 1);
-        this.buttonSolve = (Button) findViewById(R.id.buttonSolve);
-        this.listViewResults = (ListView) findViewById(R.id.listViewResults);
-        this.editTextBoardLetters = (EditText) findViewById(R.id.editTextBoardLetters);
-        this.editTextLetters = (EditText) findViewById(R.id.editTextLetters);
-        this.spinnerLang = (Spinner) findViewById(R.id.spinnerLang);
-        this.progressBar = (ProgressBar) findViewById(R.id.progressBar);
-        this.selectionLayout = findViewById(R.id.selectionLayout);
-        this.selectionProgressBar = (ProgressBar) findViewById(R.id.selectionProgressBar);
-        this.selectionWebView = (WebView) findViewById(R.id.selectionWebView);
-        this.selectionLayout.setOnClickListener(new View.OnClickListener() {
+        this.editTextLetters.setOnTouchListener(new View.OnTouchListener() {
             @Override
-            public void onClick(View v) {
-                selectionLayout.setVisibility(View.INVISIBLE);
+            public boolean onTouch(View v, MotionEvent event) {
+                final int DRAWABLE_LEFT = 0;
+                final int DRAWABLE_TOP = 1;
+                final int DRAWABLE_RIGHT = 2;
+                final int DRAWABLE_BOTTOM = 3;
+
+                if(event.getAction() == MotionEvent.ACTION_UP) {
+                    if (event.getRawX() >= (editTextLetters.getRight() - editTextLetters.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
+                        launchBoardDetection();
+                        return true;
+                    }
+                }
+                return false;
             }
         });
-        this.selectionWebView.setWebViewClient(new SingleHostWebViewClient("wiktionary.org"));
-        setLoading(false);
+        this.boardDetectionCameraView.setCvCameraViewListener(this);
         setLanguages();
         this.editTextLetters.requestFocus();
+        setLoading(false);
     }
 
     @Override
     public void onBackPressed() {
+        if (this.boardDetectionLayout.getVisibility() == View.VISIBLE) {
+            this.searchMode(true);
+            return;
+        }
+
         if (this.selectionLayout.getVisibility() == View.VISIBLE) {
             if (this.selectionWebView.canGoBack()) {
                 this.selectionWebView.goBack();
                 return;
             }
 
-            this.selectionLayout.setVisibility(View.INVISIBLE);
+            this.searchMode(true);
             return;
         }
 
         super.onBackPressed();
+    }
+
+    private void launchBoardDetection() {
+        this.boardDetectionMode(true);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (this.boardDetectionCameraView != null)
+            this.boardDetectionCameraView.disableView();
     }
 
     private void recieveData(String message) {
@@ -222,9 +276,10 @@ public class ScrabbleCrackerActivity extends ActivityBase {
             this.hideKeyboad();
             String word = (String) ((HashMap) listViewResults.getAdapter().getItem(position)).get("Word");
             this.itemToClipboard(word);
-            this.selectionLayout.setVisibility(View.VISIBLE);
             this.selectionWebView.loadData("", "text/plain", "utf8");
+            this.selectionWebView.clearHistory();
             this.selectionWebView.loadUrl("https://" + this.getLangKey() + ".m.wiktionary.org/wiki/" + URLEncoder.encode(word, "utf8"));
+            this.selectionLayout.setVisibility(View.VISIBLE);
         } catch (Exception e) {
             error(e, "An error occurred loading wiktionary.");
         }
@@ -284,5 +339,73 @@ public class ScrabbleCrackerActivity extends ActivityBase {
 
         search();
         return true;
+    }
+
+    private BaseLoaderCallback loaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                {
+                    Log.i(TAG, "OpenCV loaded successfully");
+                    boardDetectionCameraView.enableView();
+                    boardDetectionCameraView.setOnTouchListener(ScrabbleCrackerActivity.this);
+                } break;
+                default:
+                {
+                    super.onManagerConnected(status);
+                } break;
+            }
+        }
+    };
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        Log.d(TAG, "onTouch invoked");
+
+        // mCalibrator.addCorners();
+        return false;
+    }
+
+    @Override
+    public void onCameraViewStarted(int width, int height) {
+
+    }
+
+    @Override
+    public void onCameraViewStopped() {
+
+    }
+
+    @Override
+    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        return null;
+    }
+
+    private void hideAll() {
+        this.searchMode(false);
+        this.selectionMode(false);
+        this.boardDetectionMode(false);
+    }
+
+    private void boardDetectionMode(boolean enabled) {
+        this.setMode(this.boardDetectionLayout);
+    }
+
+    private void searchMode(boolean enabled) {
+        this.setMode(this.generalLayout);
+    }
+
+    private void selectionMode(boolean enabled) {
+        this.setMode(this.selectionLayout);
+    }
+
+    private void setMode(View view) {
+        this.hideAll();
+        this.setVisibility(view, true);
+    }
+
+    private void setVisibility(View view, boolean visible) {
+        view.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
     }
 }
